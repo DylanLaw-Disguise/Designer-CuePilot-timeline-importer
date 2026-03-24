@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>disguise | Batch Importer</title>
+    <style>
+        :root {
+            --bg-color: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --accent: #0078d4;
+            --accent-hover: #0086f1;
+            --camera-accent: #00bcd4;
+            --notes-accent: #8e44ad;
+            --border: #333;
+            --text-main: #e0e0e0;
+            --text-dim: #888;
+            --terminal-bg: #050505;
+            --success: #00ff41;
+            --warning: #ff9800;
+        }
+
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .container { 
+            width: 100%; 
+            max-width: 600px; 
+            background: var(--card-bg); 
+            padding: 40px; 
+            border-radius: 16px; 
+            border: 1px solid var(--border); 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+        }
+        
+        h2 { 
+            margin-top: 0; 
+            background: linear-gradient(90deg, #fff, #888); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            margin-bottom: 30px; 
+            font-size: 1.8rem;
+        }
+        
+        .section { 
+            background: rgba(255,255,255,0.03); 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            border: 1px solid var(--border); 
+        }
+        
+        .upload-section {
+            background: rgba(255,255,255,0.02);
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            transition: border-color 0.2s ease;
+        }
+        
+        .upload-section.camera-cuts {
+            border-left: 3px solid var(--camera-accent);
+        }
+        
+        .upload-section.notes {
+            border-left: 3px solid var(--notes-accent);
+        }
+        
+        .upload-section:hover {
+            border-color: var(--text-dim);
+        }
+        
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .camera-cuts .section-title {
+            color: var(--camera-accent);
+        }
+        
+        .notes .section-title {
+            color: var(--notes-accent);
+        }
+        
+        label { 
+            display: block; 
+            margin-bottom: 10px; 
+            font-size: 0.7rem; 
+            font-weight: 700; 
+            color: var(--text-dim); 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+        }
+        
+        input[type="text"], input[type="number"] { 
+            width: 100%; 
+            padding: 12px; 
+            background: #121212; 
+            border: 1px solid var(--border); 
+            color: #fff; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            outline: none; 
+            transition: border-color 0.2s ease;
+        }
+        
+        input[type="text"]:focus, input[type="number"]:focus {
+            border-color: var(--accent);
+        }
+        
+        input[type="file"] { 
+            font-size: 0.85rem; 
+            color: var(--text-dim); 
+            width: 100%; 
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 8px;
+        }
+        
+        .file-count {
+            font-size: 0.75rem;
+            color: var(--success);
+            margin-top: 6px;
+            font-weight: 600;
+        }
+        
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            color: white; 
+            font-weight: 600; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            text-transform: uppercase; 
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-import { 
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            margin-top: 10px;
+        }
+        
+        button:hover { 
+            opacity: 0.9; 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 12px rgba(0,120,212,0.3);
+        }
+        
+        button:disabled { 
+            background: #444; 
+            cursor: not-allowed; 
+            transform: none;
+            box-shadow: none;
+        }
+        
+        #log { 
+            background: var(--terminal-bg); 
+            color: var(--success); 
+            padding: 15px; 
+            height: 200px; 
+            overflow-y: auto; 
+            font-family: 'Courier New', monospace; 
+            font-size: 0.8rem; 
+            border: 1px solid var(--border); 
+            border-radius: 6px; 
+            margin-top: 10px; 
+        }
+        
+        .info { color: var(--warning); }
+        .error { color: #ff4444; }
+        
+        .flex-row { 
+            display: flex; 
+            gap: 12px; 
+        }
+        
+        .description {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>CSV Batch Importer</h2>
+    
+    <div class="section">
+        <label>Network Configuration</label>
+        <div class="flex-row">
+            <div style="flex: 2;">
+                <input type="text" id="ip" value="localhost" placeholder="IP Address">
+            </div>
+            <div style="flex: 1;">
+                <input type="number" id="fps" value="60" title="Timeline FPS" placeholder="FPS">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <label>Import Sources</label>
+        
+        <div class="upload-section camera-cuts">
+            <div class="section-title">📹 Camera Cuts</div>
+            <div class="file-input-wrapper">
+                <input type="file" id="cameraCutsFiles" accept=".csv" multiple>
+                <div id="cameraCutsCount" class="file-count" style="display: none;"></div>
+            </div>
+            <div class="description">Standard import with open layers using exact durations from CSV</div>
+        </div>
+        
+        <div class="upload-section notes">
+            <div class="section-title">📝 Notes</div>
+            <div class="file-input-wrapper">
+                <input type="file" id="notesFiles" accept=".csv" multiple>
+                <div id="notesCount" class="file-count" style="display: none;"></div>
+            </div>
+            <div class="description">Grouped import as video layers with fixed 5-second duration</div>
+        </div>
+
+        <button id="btnImport" class="btn-import" onclick="processAllImports()">
+            Import All Files
+        </button>
+        <p style="font-size: 0.65rem; color: var(--text-dim); margin-top: 12px; text-align: center;">
+            Files are processed sequentially to prevent API collisions
+        </p>
+    </div>
+
+    <div id="log">Ready to import...</div>
+</div>
+
+<script>
+    // File count display
+    document.getElementById('cameraCutsFiles').addEventListener('change', function(e) {
+        const count = e.target.files.length;
+        const countEl = document.getElementById('cameraCutsCount');
+        if (count > 0) {
+            countEl.textContent = `${count} file${count !== 1 ? 's' : ''} selected`;
+            countEl.style.display = 'block';
+        } else {
+            countEl.style.display = 'none';
+        }
+    });
+
+    document.getElementById('notesFiles').addEventListener('change', function(e) {
+        const count = e.target.files.length;
+        const countEl = document.getElementById('notesCount');
+        if (count > 0) {
+            countEl.textContent = `${count} file${count !== 1 ? 's' : ''} selected`;
+            countEl.style.display = 'block';
+        } else {
+            countEl.style.display = 'none';
+        }
+    });
+
+    const addLog = (msg, type = 'normal') => {
+        const log = document.getElementById('log');
+        const div = document.createElement('div');
+        if (type === 'info') div.className = 'info';
+        if (type === 'error') div.className = 'error';
+        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+    };
+
+    function parseVisionTime(ts, fps) {
+        if (!ts) return 0;
+        let clean = ts.trim().replace('-', '');
+        const p = clean.split(':').map(x => parseInt(x) || 0);
+        let seconds = 0;
+        if (p.length === 4) seconds = p[0] * 3600 + p[1] * 60 + p[2] + (p[3] / fps);
+        else if (p.length === 3) seconds = p[0] * 60 + p[1] + (p[2] / fps);
+        return ts.includes('-') ? -seconds : seconds;
+    }
+
+    async function processAllImports() {
+        const cameraCutsFiles = document.getElementById('cameraCutsFiles').files;
+        const notesFiles = document.getElementById('notesFiles').files;
+        
+        const totalFiles = cameraCutsFiles.length + notesFiles.length;
+        
+        if (totalFiles === 0) {
+            addLog("No files selected. Please select at least one file to import.", "info");
+            return;
+        }
+
+        // Disable button during process
+        const btnImport = document.getElementById('btnImport');
+        btnImport.disabled = true;
+        btnImport.textContent = 'Importing...';
+
+        addLog(`═══════════════════════════════════════════`);
+        addLog(`Starting batch import: ${totalFiles} total files`);
+        addLog(`═══════════════════════════════════════════`);
+
+        let processedCount = 0;
+
+        // Process Camera Cuts (standard import)
+        if (cameraCutsFiles.length > 0) {
+            addLog(`\n📹 CAMERA CUTS (${cameraCutsFiles.length} files)`);
+            for (let i = 0; i < cameraCutsFiles.length; i++) {
+                processedCount++;
+                addLog(`[${processedCount}/${totalFiles}] Processing: ${cameraCutsFiles[i].name}`);
+                await processSingleFile(cameraCutsFiles[i], false);
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+        }
+
+        // Process Notes (grouped import)
+        if (notesFiles.length > 0) {
+            addLog(`\n📝 NOTES (${notesFiles.length} files)`);
+            for (let i = 0; i < notesFiles.length; i++) {
+                processedCount++;
+                addLog(`[${processedCount}/${totalFiles}] Processing: ${notesFiles[i].name}`);
+                await processSingleFile(notesFiles[i], true);
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+        }
+
+        addLog(`═══════════════════════════════════════════`);
+        addLog(`✓ ALL IMPORTS COMPLETE (${totalFiles} files processed)`);
+        addLog(`═══════════════════════════════════════════`);
+        
+        btnImport.disabled = false;
+        btnImport.textContent = 'Import All Files';
+    }
+
+    async function processSingleFile(file, useGrouping) {
+        const ip = document.getElementById('ip').value;
+        const fps = parseFloat(document.getElementById('fps').value);
+        const fileName = file.name.replace(/\.[^/.]+$/, "");
+        
+        try {
+            const text = await file.text();
+            const lines = text.split(/\r?\n/).filter(l => l.includes(','));
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            const idxS = headers.indexOf('Source') !== -1 ? headers.indexOf('Source') : headers.indexOf('Name');
+            const idxT = headers.indexOf('ItemTime') !== -1 ? headers.indexOf('ItemTime') : headers.indexOf('Start');
+            const idxD = headers.indexOf('Duration') !== -1 ? headers.indexOf('Duration') : headers.indexOf('Length');
+
+            if (idxT === -1 || idxD === -1) {
+                addLog(`✗ Error in ${file.name}: Required headers missing`, "error");
+                return;
+            }
+
+            let rows = [];
+            let minTime = Infinity;
+
+            for (let i = 1; i < lines.length; i++) {
+                const c = lines[i].split(',').map(item => item.trim());
+                if (c.length < 2) continue;
+                const start = parseVisionTime(c[idxT], fps);
+                const dur = parseVisionTime(c[idxD], fps);
+                if (start < minTime) minTime = start;
+                
+                const rowName = useGrouping ? fileName : (c[idxS] || "Layer");
+                rows.push({ n: rowName, s: start, d: dur });
+            }
+
+            const offset = -minTime;
+            const pythonData = JSON.stringify(rows.map(r => ({
+                name: r.n,
+                start: r.s + offset,
+                dur: r.d > 0 ? r.d : 0.5
+            })));
+
+            const script = useGrouping ? `
+import json
+data = json.loads('${pythonData}')
+track = guisystem.track
+if track:
+    layers_to_group = []
+    fixed_duration = 5.0
+    for item in data:
+        try:
+            sb = track.timeToBeat(float(item['start']))
+            eb = track.timeToBeat(float(item['start']) + fixed_duration)
+            nl = track.addNewLayer(VariableVideoModule, sb, eb - sb, str(item['name']))
+            if nl: layers_to_group.append(nl)
+        except Exception as e: pass
+    if layers_to_group:
+        track.groupLayers(layers_to_group, "${fileName}", False)
+    track.saveOnDelete()
+` : `
+import json
+data = json.loads('${pythonData}')
+track = guisystem.track
+if track:
+    for item in data:
+        sb = track.timeToBeat(float(item['start']))
+        eb = track.timeToBeat(float(item['start']) + float(item['dur']))
+        track.addNewLayer(OpenModule, sb, eb - sb, str(item['name']))
+    track.saveOnDelete()
+`;
+
+            const response = await fetch(`http://${ip}:80/api/session/python/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ script: script })
+            });
+
+            if (response.ok) {
+                addLog(`  ✓ Success: ${file.name} (${rows.length} layers)`);
+            } else {
+                addLog(`  ✗ API Error: ${file.name} (status ${response.status})`, "error");
+            }
+
+        } catch (e) {
+            addLog(`  ✗ System Error: ${e.message}`, "error");
+        }
+    }
+</script>
+</body>
+</html>
